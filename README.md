@@ -8,7 +8,7 @@
 - `assets/css/style.css`
 - `assets/js/main.js` 스파크 번쩍임(불규칙 간격), 드문 전체 반전
 - `assets/img/spark.svg` 히어로 그래픽 자리표시자. 스케치 스캔으로 교체
-- `assets/img/01-siren.jpg` … `08-innocence.jpg` 프로젝트 대표 이미지 8장(4:5 권장, ≤500KB)
+- `assets/img/01.jpg` … `08.jpg` 프로젝트 대표 이미지 8장(4:5 권장, ≤500KB)
 
 ## 교체할 것
 
