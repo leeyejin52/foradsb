@@ -24,3 +24,28 @@
 
   Array.prototype.forEach.call(cells, function (el, i) { flicker(el, i); });
 })();
+
+// Hero → work: one wheel flick leaves the hero in a single smooth jump,
+// and a flick up from the top of the grid returns to the hero.
+(function () {
+  var hero = document.getElementById('hero');
+  var work = document.getElementById('work');
+  if (!hero || !work) return;
+  var locked = false;
+  function go(y) {
+    locked = true;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+    setTimeout(function () { locked = false; }, 800);
+  }
+  window.addEventListener('wheel', function (e) {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if (locked) { e.preventDefault(); return; }
+    if (e.deltaY > 0 && y < h - 2) { e.preventDefault(); go(work.offsetTop); }
+    else if (e.deltaY < 0 && y > 0 && y <= work.offsetTop + 8) { e.preventDefault(); go(0); }
+  }, { passive: false });
+  window.addEventListener('keydown', function (e) {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if ((e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') && y < h - 2) { e.preventDefault(); go(work.offsetTop); }
+    else if ((e.key === 'ArrowUp' || e.key === 'PageUp') && y > 0 && y <= work.offsetTop + 8) { e.preventDefault(); go(0); }
+  });
+})();
