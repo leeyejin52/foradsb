@@ -73,65 +73,74 @@
   check();
 })();
 
-// Row settle: free scrolling, but once the user pauses the page eases to the
-// nearest row boundary (0.7s). Only when a row fits the viewport, only with a
-// mouse/trackpad, and never past the last row into the footer.
+// Row flick: one wheel gesture moves exactly one row (each row is one screen).
+// 1.0s heavy easing, trackpad momentum is swallowed until the gesture ends.
+// Footer is the final stop. Touch devices scroll freely.
 (function () {
   var grid = document.getElementById('work');
   if (!grid) return;
   var tiles = grid.querySelectorAll('.tile');
   if (!tiles.length) return;
   var body = document.body, html = document.documentElement;
-  var idle = null, raf = null, animating = false, graceUntil = 0;
+  var locked = false, quiet = true, lastWheel = 0, raf = null;
 
-  function rows() {
+  function stops() {
     var tops = [], seen = {};
     tiles.forEach(function (t) { var y = Math.round(t.offsetTop); if (!seen[y]) { seen[y] = 1; tops.push(y); } });
-    return { tops: tops, h: tiles[0].offsetHeight };
+    var max = Math.max(0, html.scrollHeight - window.innerHeight);
+    if (max > tops[tops.length - 1] + 2) tops.push(max); // footer
+    return tops;
   }
-  function enabled(r) {
-    return window.matchMedia('(pointer: fine)').matches && r.h <= window.innerHeight * 1.1;
-  }
+  function active() { return window.matchMedia('(pointer: fine)').matches; }
   function ease(t) { return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2; }
 
-  function stop() {
-    if (raf) cancelAnimationFrame(raf);
-    raf = null; animating = false;
-    html.style.overflow = '';
-  }
-  function animateTo(to, duration) {
+  function go(to, duration) {
     var from = window.scrollY, start = performance.now();
-    animating = true;
+    locked = true;
+    body.classList.add('scrolling');
     html.style.overflow = 'hidden';
+    if (raf) cancelAnimationFrame(raf);
     function step(now) {
       var t = Math.min(1, (now - start) / duration);
       window.scrollTo(0, Math.round(from + (to - from) * ease(t)));
       if (t < 1) raf = requestAnimationFrame(step);
-      else { stop(); graceUntil = performance.now() + 250; body.classList.remove('scrolling'); }
+      else {
+        raf = null;
+        html.style.overflow = '';
+        body.classList.remove('scrolling');
+        setTimeout(function () { locked = false; }, 120);
+      }
     }
     raf = requestAnimationFrame(step);
   }
-
-  function settle() {
-    idle = null;
-    var r = rows(), y = window.scrollY;
-    var last = r.tops[r.tops.length - 1];
-    if (!enabled(r) || y > last + 2) { body.classList.remove('scrolling'); return; } // past the last row: flow into footer
-    var target = r.tops[0];
-    for (var i = 0; i < r.tops.length; i++) if (Math.abs(r.tops[i] - y) < Math.abs(target - y)) target = r.tops[i];
-    if (Math.abs(target - y) < 2) { body.classList.remove('scrolling'); return; }
-    animateTo(target, 700);
+  function jump(dir) {
+    var s = stops(), y = window.scrollY, i = 0;
+    for (var k = 0; k < s.length; k++) if (Math.abs(s[k] - y) < Math.abs(s[i] - y)) i = k;
+    var n = Math.min(s.length - 1, Math.max(0, i + dir));
+    if (n === i && Math.abs(s[i] - y) < 2) return;
+    go(s[n], 1000);
   }
 
-  window.addEventListener('scroll', function () {
-    if (animating || performance.now() < graceUntil) return;
-    body.classList.add('scrolling');
-    if (idle) clearTimeout(idle);
-    idle = setTimeout(settle, 150);
-  }, { passive: true });
+  window.addEventListener('wheel', function (e) {
+    if (!active()) return;
+    var now = performance.now();
+    if (now - lastWheel > 400) quiet = true; // a pause means a new gesture
+    lastWheel = now;
+    if (locked) { e.preventDefault(); return; }
+    if (!quiet) { // momentum tail of the gesture that already moved us
+      e.preventDefault();
+      if (Math.abs(e.deltaY) < 4) quiet = true;
+      return;
+    }
+    if (Math.abs(e.deltaY) < 4) return;
+    e.preventDefault();
+    quiet = false;
+    jump(e.deltaY > 0 ? 1 : -1);
+  }, { passive: false });
 
-  // Any new input during the settle animation hands control straight back.
-  ['wheel', 'touchstart', 'keydown'].forEach(function (ev) {
-    window.addEventListener(ev, function () { if (animating) { stop(); body.classList.add('scrolling'); if (idle) clearTimeout(idle); idle = setTimeout(settle, 150); } }, { passive: true });
+  window.addEventListener('keydown', function (e) {
+    if (!active() || locked) return;
+    if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); jump(1); }
+    else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); jump(-1); }
   });
 })();

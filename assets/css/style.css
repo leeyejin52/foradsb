@@ -45,7 +45,8 @@ p { margin: 0; }
 .tile {
   position: relative;
   display: block;
-  aspect-ratio: 4 / 5;
+  height: 100vh;
+  height: 100svh;
   overflow: hidden;
   background: #ececec;
 }
