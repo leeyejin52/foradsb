@@ -38,16 +38,26 @@
     return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
   }
   function go(to, duration) {
-    var from = window.scrollY, start = performance.now();
+    // Lock first and let the browser's own in-flight wheel scroll settle
+    // before we start driving scrollY, otherwise the two fight and stutter.
     locked = true;
     if (raf) cancelAnimationFrame(raf);
-    function step(now) {
-      var t = Math.min(1, (now - start) / duration);
-      window.scrollTo(0, from + (to - from) * ease(t));
-      if (t < 1) { raf = requestAnimationFrame(step); }
-      else { raf = null; setTimeout(function () { locked = false; }, 150); }
-    }
-    raf = requestAnimationFrame(step);
+    var html = document.documentElement, prevOverflow = html.style.overflow;
+    html.style.overflow = 'hidden';
+    setTimeout(function () {
+      var from = window.scrollY, start = performance.now();
+      function step(now) {
+        var t = Math.min(1, (now - start) / duration);
+        window.scrollTo(0, Math.round(from + (to - from) * ease(t)));
+        if (t < 1) { raf = requestAnimationFrame(step); }
+        else {
+          raf = null;
+          html.style.overflow = prevOverflow;
+          setTimeout(function () { locked = false; }, 200);
+        }
+      }
+      raf = requestAnimationFrame(step);
+    }, 120);
   }
   function down() { go(work.offsetTop, 1400); }
   function up() { go(0, 1200); }
