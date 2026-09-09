@@ -30,34 +30,45 @@ p { margin: 0; }
   overflow: hidden;
   background: var(--bg);
 }
-.hero.burst { background: var(--fg); }
-.hero.burst .info, .hero.burst .scroll { color: var(--bg); }
-.hero.burst .spark img { filter: invert(1); }
-
 .info {
   position: absolute;
   left: 20px;
   top: 18px;
-  z-index: 2;
+  z-index: 3;
 }
 .info .name { font-weight: 500; font-size: 14px; }
 
-.spark {
+/* Nucleus stage: keeps the 2537:1792 composition, fits inside the hero */
+.stage {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 2537 / 1792;
+  width: min(100vw, calc(100vh * 2537 / 1792));
+  width: min(100vw, calc(100svh * 2537 / 1792));
+  height: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
 }
-.spark img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: opacity 40ms linear;
+.stage .col {
+  position: absolute;
+  left: 2%; top: 14%;
+  width: 12.6%;
+  pointer-events: none;
 }
-.spark.off img { opacity: 0; }
-.spark.dim img { opacity: 0.15; }
+.stage .cell {
+  position: absolute;
+  width: calc(var(--d) * 100%);
+  left: calc(var(--x) * 100%);
+  top: calc(var(--y) * 100%);
+  transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, 1));
+  cursor: grab;
+  will-change: transform;
+  transition: filter 300ms;
+}
+.stage .cell.active { cursor: grabbing; z-index: 2; }
+.stage .cell:hover { z-index: 2; }
 
 .scroll {
   position: absolute;
