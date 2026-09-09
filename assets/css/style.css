@@ -38,6 +38,13 @@ p { margin: 0; }
   top: 18px;
   z-index: 3;
 }
+.hero .info {
+  position: fixed;
+  z-index: 10;
+  color: var(--fg);
+  transition: color 250ms ease;
+}
+.hero .info.light { color: #fff; }
 .info .name { font-weight: 600; font-size: 14px; }
 
 /* Nucleus stage: keeps the 2537:1792 composition, fits inside the hero */
@@ -109,10 +116,8 @@ p { margin: 0; }
   bottom: 10px;
   color: #fff;
   mix-blend-mode: difference;
-  opacity: 0;
-  transition: opacity 200ms;
+  font-size: 12px;
 }
-.tile:hover span { opacity: 1; }
 
 /* Footer */
 .foot {
