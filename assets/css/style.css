@@ -1,0 +1,121 @@
+:root {
+  --bg: #ffffff;
+  --fg: #0a0a0a;
+  --muted: #888888;
+  --font: "Inter", "SUIT", "Apple SD Gothic Neo", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { opacity: 0.5; }
+p { margin: 0; }
+
+/* Hero */
+.hero {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--bg);
+}
+.hero.burst { background: var(--fg); }
+.hero.burst .info, .hero.burst .scroll { color: var(--bg); }
+.hero.burst .spark img { filter: invert(1); }
+
+.info {
+  position: absolute;
+  left: 20px;
+  top: 18px;
+  z-index: 2;
+}
+.info .name { font-weight: 500; font-size: 14px; }
+
+.spark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 40ms linear;
+}
+.spark.off img { opacity: 0; }
+.spark.dim img { opacity: 0.15; }
+
+.scroll {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  z-index: 2;
+  color: var(--muted);
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #ececec;
+}
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 600ms cubic-bezier(.2,.7,.2,1);
+}
+.tile:hover { opacity: 1; }
+.tile:hover img { transform: scale(1.03); }
+.tile span {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  color: #fff;
+  mix-blend-mode: difference;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+.tile:hover span { opacity: 1; }
+
+/* Footer */
+.foot {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  padding: 40px 20px 32px;
+  border-top: 1px solid var(--fg);
+}
+.foot .info { position: static; }
+.about {
+  font-size: 13px;
+  line-height: 1.8;
+  max-width: 640px;
+}
+
+@media (max-width: 720px) {
+  .grid { grid-template-columns: 1fr; }
+  .foot { grid-template-columns: 1fr; }
+}
