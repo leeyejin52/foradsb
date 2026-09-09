@@ -43,33 +43,31 @@ p { margin: 0; }
   z-index: 10;
   color: var(--fg);
   transition: color 250ms ease;
-  transform-origin: left top;
-  transform: scale(var(--k, 2.6));
-  will-change: transform;
+  font-size: calc(12px * var(--k, 2.6));
 }
+.hero .info .name { font-size: calc(14px * var(--k, 2.6)); }
 .hero .info.light { color: #fff; }
 .info .name { font-weight: 600; font-size: 14px; }
 
-/* Nucleus stage: fluid 5×3 grid that fills the hero; gaps flex with the viewport */
+/* Nucleus stage: circles keep a fixed size (--cd); only the gaps flex with the viewport */
 .stage {
+  --cd: min(15vw, 24vh);
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  column-gap: clamp(24px, 5vw, 110px);
-  row-gap: clamp(12px, 3vh, 48px);
-  padding: clamp(72px, 12vh, 140px) clamp(24px, 6vw, 120px) clamp(48px, 9vh, 120px);
+  grid-template-columns: repeat(5, var(--cd));
+  grid-template-rows: repeat(3, var(--cd));
+  justify-content: space-between;
+  align-content: space-between;
+  padding: 10vh 3vw 6vh;
   pointer-events: none;
   transform-origin: center;
   will-change: transform, opacity;
 }
 .stage .cell {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  align-self: center;
-  justify-self: center;
+  width: var(--cd);
+  height: var(--cd);
+  display: block;
   opacity: 1;
   transition: opacity 40ms linear;
 }
