@@ -65,7 +65,11 @@ p { margin: 0; }
   color: #fff;
   mix-blend-mode: difference;
   font-size: 12px;
+  transition: opacity 300ms ease;
 }
+/* While the page is moving: labels hide, images sit slightly enlarged; both settle on arrival */
+body.scrolling .tile span { opacity: 0; }
+body.scrolling .tile img { transform: scale(1.02); }
 
 /* Footer */
 .foot {
