@@ -102,7 +102,15 @@ body.scrolling .tile img { transform: scale(1.02); }
   background: var(--bg);
 }
 .foot .col { max-width: 520px; }
-.foot .label { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.foot .big {
+  font-size: clamp(48px, 6vw, 96px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 40px;
+}
+.foot .exec { text-align: right; justify-self: end; }
+.foot .exec li { text-align: right; }
 .foot h2 {
   margin: 0 0 28px;
   font-size: 32px;
