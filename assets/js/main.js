@@ -150,3 +150,22 @@
   document.querySelectorAll('.tile img').forEach(function (img) { img.addEventListener('load', req); });
   req();
 })();
+
+// Hide the fixed header once the footer enters the viewport (the footer
+// carries the same information).
+(function () {
+  var hd = document.getElementById('hd');
+  var foot = document.querySelector('.foot');
+  if (!hd || !foot) return;
+  var pending = false;
+  function check() {
+    pending = false;
+    var top = foot.getBoundingClientRect().top;
+    hd.classList.toggle('hidden', top < window.innerHeight - 1);
+  }
+  function req() { if (!pending) { pending = true; requestAnimationFrame(check); } }
+  window.addEventListener('scroll', function () { check(); }, { passive: true });
+  window.addEventListener('resize', req);
+  window.addEventListener('load', check);
+  check();
+})();

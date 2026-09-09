@@ -47,6 +47,8 @@ p { margin: 0; }
 }
 .hero .info .name { font-size: calc(14px * var(--k, 2.6)); }
 .hero .info.light { color: #fff; }
+.hero .info { transition: color 250ms ease, opacity 300ms ease, transform 300ms ease; }
+.hero .info.hidden { opacity: 0; transform: translateY(-8px); pointer-events: none; }
 .info .name { font-weight: 600; font-size: 14px; }
 
 /* Nucleus stage: fixed composition (px), centered in the hero, not responsive */
