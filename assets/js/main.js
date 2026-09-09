@@ -80,10 +80,15 @@
     var y = window.scrollY, h = hero.offsetHeight;
     if (!stage || h === 0) return;
     var p = Math.min(1, Math.max(0, y / h));
-    stage.style.transform = 'translate(-50%, -50%) translateY(' + (p * h * 0.35) + 'px) scale(' + (1 - p * 0.06) + ')';
+    var e = 1 - Math.pow(1 - p, 2); // ease-out: shrinks quickly at first, settles into header size
+    stage.style.transform = 'translateY(' + (p * h * 0.35) + 'px) scale(' + (1 - p * 0.06) + ')';
     stage.style.opacity = String(1 - p * 1.1);
+    var hd = document.getElementById('hd');
+    if (hd) hd.style.setProperty('--k', String(2.6 - 1.6 * e));
   }
   window.addEventListener('scroll', parallax, { passive: true });
+  window.addEventListener('resize', parallax);
+  window.addEventListener('load', parallax);
   parallax();
 })();
 
