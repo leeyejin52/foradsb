@@ -60,12 +60,6 @@ p { margin: 0; }
   height: auto;
   pointer-events: none;
 }
-.stage .col {
-  position: absolute;
-  left: 2%; top: 14%;
-  width: 12.6%;
-  pointer-events: none;
-}
 .stage .cell {
   position: absolute;
   width: calc(var(--d) * 100%);
