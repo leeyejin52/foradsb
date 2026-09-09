@@ -7,7 +7,7 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-snap-type: y proximity; }
+@media (pointer: coarse) { html { scroll-snap-type: y proximity; } }
 html, body {
   margin: 0;
   background: var(--bg);
@@ -45,6 +45,8 @@ p { margin: 0; }
   position: absolute;
   left: 50%; top: 50%;
   transform: translate(-50%, -50%);
+  transform-origin: center;
+  will-change: transform, opacity;
   aspect-ratio: 2537 / 1792;
   width: min(100vw, calc(100vh * 2537 / 1792));
   width: min(100vw, calc(100svh * 2537 / 1792));

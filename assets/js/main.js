@@ -25,27 +25,54 @@
   Array.prototype.forEach.call(cells, function (el, i) { flicker(el, i); });
 })();
 
-// Hero → work: one wheel flick leaves the hero in a single smooth jump,
-// and a flick up from the top of the grid returns to the hero.
+// Hero → work: one wheel flick leaves the hero in a single heavy, eased jump
+// (1.4s, slow start, long settle). A flick up from the top of the grid returns.
 (function () {
   var hero = document.getElementById('hero');
   var work = document.getElementById('work');
+  var stage = document.getElementById('stage');
   if (!hero || !work) return;
-  var locked = false;
-  function go(y) {
-    locked = true;
-    window.scrollTo({ top: y, behavior: 'smooth' });
-    setTimeout(function () { locked = false; }, 800);
+  var locked = false, raf = null;
+
+  function ease(t) { // easeInOutQuint: heavy start, long deceleration
+    return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
   }
+  function go(to, duration) {
+    var from = window.scrollY, start = performance.now();
+    locked = true;
+    if (raf) cancelAnimationFrame(raf);
+    function step(now) {
+      var t = Math.min(1, (now - start) / duration);
+      window.scrollTo(0, from + (to - from) * ease(t));
+      if (t < 1) { raf = requestAnimationFrame(step); }
+      else { raf = null; setTimeout(function () { locked = false; }, 150); }
+    }
+    raf = requestAnimationFrame(step);
+  }
+  function down() { go(work.offsetTop, 1400); }
+  function up() { go(0, 1200); }
+
   window.addEventListener('wheel', function (e) {
     var y = window.scrollY, h = hero.offsetHeight;
     if (locked) { e.preventDefault(); return; }
-    if (e.deltaY > 0 && y < h - 2) { e.preventDefault(); go(work.offsetTop); }
-    else if (e.deltaY < 0 && y > 0 && y <= work.offsetTop + 8) { e.preventDefault(); go(0); }
+    if (e.deltaY > 0 && y < h - 2) { e.preventDefault(); down(); }
+    else if (e.deltaY < 0 && y > 0 && y <= work.offsetTop + 8) { e.preventDefault(); up(); }
   }, { passive: false });
   window.addEventListener('keydown', function (e) {
     var y = window.scrollY, h = hero.offsetHeight;
-    if ((e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') && y < h - 2) { e.preventDefault(); go(work.offsetTop); }
-    else if ((e.key === 'ArrowUp' || e.key === 'PageUp') && y > 0 && y <= work.offsetTop + 8) { e.preventDefault(); go(0); }
+    if (locked) return;
+    if ((e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') && y < h - 2) { e.preventDefault(); down(); }
+    else if ((e.key === 'ArrowUp' || e.key === 'PageUp') && y > 0 && y <= work.offsetTop + 8) { e.preventDefault(); up(); }
   });
+
+  // Hero drifts up slower than the page and fades as it leaves (weight).
+  function parallax() {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if (!stage || h === 0) return;
+    var p = Math.min(1, Math.max(0, y / h));
+    stage.style.transform = 'translate(-50%, -50%) translateY(' + (p * h * 0.35) + 'px) scale(' + (1 - p * 0.06) + ')';
+    stage.style.opacity = String(1 - p * 1.1);
+  }
+  window.addEventListener('scroll', parallax, { passive: true });
+  parallax();
 })();
