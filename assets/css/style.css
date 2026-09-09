@@ -88,22 +88,38 @@ p { margin: 0; }
 body.scrolling .tile span.meta { opacity: 0; }
 body.scrolling .tile img { transform: scale(1.02); }
 
-/* Footer */
+/* Footer: full-height, two columns (sense / execution), contact at the bottom */
 .foot {
+  min-height: 100vh;
+  min-height: 100svh;
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 24px;
-  padding: 40px 20px 32px;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto;
+  column-gap: 48px;
+  row-gap: 64px;
+  padding: 96px 20px 32px;
   border-top: 1px solid var(--fg);
+  background: var(--bg);
 }
+.foot .col { max-width: 520px; }
+.foot .label { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.foot h2 {
+  margin: 0 0 28px;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.foot .body { font-size: 14px; line-height: 1.8; margin-bottom: 28px; }
+.foot ul { list-style: none; margin: 0; padding: 0; font-size: 13px; line-height: 1.8; }
+.foot li { border-top: 1px solid var(--fg); padding: 8px 0; }
+.foot li:last-child { border-bottom: 1px solid var(--fg); }
+.foot .contact { grid-column: 1 / -1; align-self: end; line-height: 1.6; }
+.foot .contact .name { font-weight: 600; font-size: 14px; }
 .foot a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 2px; }
-.about {
-  font-size: 13px;
-  line-height: 1.8;
-  max-width: 640px;
-}
 
 @media (max-width: 720px) {
   .grid { grid-template-columns: 1fr; }
-  .foot { grid-template-columns: 1fr; }
+  .foot { grid-template-columns: 1fr; grid-template-rows: auto auto auto; row-gap: 48px; padding-top: 72px; }
+  .foot h2 { font-size: 26px; }
 }
