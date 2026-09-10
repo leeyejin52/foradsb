@@ -88,8 +88,10 @@
   function stops() {
     var tops = [], seen = {};
     tiles.forEach(function (t) { var y = Math.round(t.offsetTop); if (!seen[y]) { seen[y] = 1; tops.push(y); } });
+    var foot = document.querySelector('.foot');
     var max = Math.max(0, html.scrollHeight - window.innerHeight);
-    if (max > tops[tops.length - 1] + 2) tops.push(max); // footer
+    var ft = foot ? Math.min(Math.round(foot.offsetTop), max) : max;
+    if (ft > tops[tops.length - 1] + 2) tops.push(ft); // footer top is the last stop
     return tops;
   }
   function active() { return window.matchMedia('(pointer: fine)').matches; }
@@ -129,12 +131,21 @@
     if (!active()) return;
     var panel = document.getElementById('panel');
     if (panel && panel.contains(e.target)) return; // the panel scrolls natively
+    var now = performance.now();
+    // The footer is its own scroll box. Inside it the browser scrolls natively as soon as
+    // the flick that brought us here has landed, so one continuous gesture carries on into
+    // the text without a pause. Scrolling up from its very top becomes a row flick again.
+    var foot = document.querySelector('.foot');
+    if (foot && foot.contains(e.target) && !(foot.scrollTop <= 0 && e.deltaY < 0)) {
+      if (locked) { e.preventDefault(); lastWheel = now; return; } // still landing
+      quiet = true; lastWheel = now;
+      return;
+    }
     // Cancel every wheel event, including the tiny first one of a trackpad gesture.
     // If the first event of a gesture gets through, the browser makes the rest of that
     // gesture uncancellable and its native momentum scroll fights our animation (jitter).
     e.preventDefault();
     if (body.classList.contains('shifting')) return;
-    var now = performance.now();
     if (now - lastWheel > 400) quiet = true; // a pause means a new gesture
     lastWheel = now;
     if (locked) return;
@@ -149,6 +160,7 @@
 
   window.addEventListener('keydown', function (e) {
     if (!active() || locked || body.classList.contains('shifting')) return;
+    if (e.target.closest && e.target.closest('.panel')) return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); jump(1); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); jump(-1); }
   });
@@ -293,4 +305,49 @@
   });
   panel.querySelector('.panel-close').addEventListener('click', close);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) close(); });
+})();
+
+// About index: all sections scroll in one column inside the footer's own scroll box
+// (the window on narrow/touch layouts). The index marks the section under the top of
+// that box and clicking scrolls to a section.
+(function () {
+  var foot = document.querySelector('.foot');
+  if (!foot) return;
+  var links = foot.querySelectorAll('.index a[href^="#"]');
+  var sections = foot.querySelectorAll('.about section');
+  if (!links.length || !sections.length) return;
+  function ownScroll() { return getComputedStyle(foot).overflowY === 'auto'; }
+  function mark(id) {
+    links.forEach(function (a) { a.parentElement.classList.toggle('active', a.getAttribute('href') === '#' + id); });
+  }
+  function spy() {
+    var fr = foot.getBoundingClientRect();
+    var top = Math.max(fr.top, 0);
+    var line = top + Math.min(fr.height, window.innerHeight) * 0.3; // current once a section's top passes this line
+    var cur = sections[0].id;
+    sections.forEach(function (sec) { if (sec.getBoundingClientRect().top <= line) cur = sec.id; });
+    var atEnd = ownScroll() ? foot.scrollTop + foot.clientHeight >= foot.scrollHeight - 2
+                            : window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    if (atEnd) cur = sections[sections.length - 1].id;
+    mark(cur);
+  }
+  function goTo(sec, smooth) {
+    var opts = { behavior: smooth ? 'smooth' : 'auto' };
+    if (ownScroll()) { opts.top = sec.offsetTop - 20; foot.scrollTo(opts); }
+    else { opts.top = sec.getBoundingClientRect().top + window.scrollY - 20; window.scrollTo(opts); }
+  }
+  foot.addEventListener('scroll', spy, { passive: true });
+  window.addEventListener('scroll', spy, { passive: true });
+  window.addEventListener('resize', spy);
+  links.forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var t = document.querySelector(a.getAttribute('href'));
+      if (!t) return;
+      e.preventDefault();
+      goTo(t, true);
+      if (history.replaceState) history.replaceState(null, '', a.getAttribute('href'));
+    });
+  });
+  if (location.hash) { var t0 = document.querySelector(location.hash); if (t0 && t0.closest('.foot')) goTo(t0, false); }
+  spy();
 })();
