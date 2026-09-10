@@ -84,7 +84,11 @@
   function onScroll() { req(); clearTimeout(settle); settle = setTimeout(force, 140); }
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', force);
-  window.addEventListener('load', force);
+  window.addEventListener('load', function () {
+    force();
+    // The restored scroll position lands around here; only then allow the fades.
+    setTimeout(function () { hd.classList.add('ready'); }, 200);
+  });
   document.querySelectorAll('.tile img').forEach(function (img) { img.addEventListener('load', force); });
   force();
 })();

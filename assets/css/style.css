@@ -8,13 +8,16 @@
 * { box-sizing: border-box; }
 
 html {
-  /* Row snapping, done by the browser: one row per flick, no wheel interception.
-     The footer is one tall snap area, so its text still scrolls freely inside it. */
-  scroll-snap-type: y mandatory;
+  /* Row snapping, done by the browser: no wheel interception. Proximity, not
+     mandatory — mandatory has to come to rest on a snap point, so releasing inside
+     the long About text dragged the page back up to the footer's start and the
+     contact block at the very bottom could never be reached. */
+  scroll-snap-type: y proximity;
 }
 
 html, body {
   margin: 0;
+  overscroll-behavior-y: none; /* no rubber-band bounce at the top or bottom */
   background-color: var(--bg);
   color: var(--fg);
   font-family: var(--font);
@@ -47,8 +50,11 @@ p { margin: 0; }
   top: 18px;
   z-index: 10;
   color: var(--fg);
-  transition: color 250ms ease, opacity 300ms ease, transform 300ms ease;
 }
+/* Fades only once the first state is settled: on reload the browser restores the
+   scroll position after the first paint, and a header that already animates would
+   fade in and straight back out. */
+.hd.ready { transition: color 250ms ease, opacity 300ms ease, transform 300ms ease; }
 .hd.light { color: #fff; }
 .hd.hidden { opacity: 0; transform: translateY(-8px); pointer-events: none; }
 
