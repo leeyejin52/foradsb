@@ -1,7 +1,10 @@
 // Fixed header: sample the luminance of whatever sits behind it and flip
 // between black (light background) and white (dark background).
+// Sampling (elementsFromPoint + getImageData) is not free, so while the page
+// is being animated it runs at most every ~120ms and once more on arrival.
 (function () {
   var hd = document.getElementById('hd');
+  var foot = document.querySelector('.foot');
   if (!hd) return;
   var cache = new Map();
   function canvasFor(img) {
@@ -33,9 +36,7 @@
     for (var i = 0; i < d.length; i += 4) sum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
     return n ? sum / n : 1;
   }
-  var pending = false;
-  function update() {
-    pending = false;
+  function sample() {
     var r = hd.getBoundingClientRect();
     var pts = [[r.left + 4, r.top + 4], [r.right - 4, r.top + 4], [r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4], [(r.left + r.right) / 2, (r.top + r.bottom) / 2]];
     var lum = 0, n = 0;
@@ -50,32 +51,32 @@
     });
     hd.classList.toggle('light', n ? (lum / n) < 0.5 : false);
   }
-  function req() { if (!pending) { pending = true; requestAnimationFrame(update); } }
-  window.addEventListener('scroll', req, { passive: true });
-  window.addEventListener('resize', req);
-  window.addEventListener('load', req);
-  document.querySelectorAll('.tile img').forEach(function (img) { img.addEventListener('load', req); });
-  req();
-})();
-
-// Hide the fixed header once the footer enters the viewport (the footer
-// carries the same information).
-(function () {
-  var hd = document.getElementById('hd');
-  var foot = document.querySelector('.foot');
-  if (!hd || !foot) return;
-  function check() {
-    hd.classList.toggle('hidden', foot.getBoundingClientRect().top < window.innerHeight - 1);
+  // Hide the header once the footer enters the viewport (it carries the same info).
+  function footCheck() {
+    if (foot) hd.classList.toggle('hidden', foot.getBoundingClientRect().top < window.innerHeight - 1);
   }
-  window.addEventListener('scroll', check, { passive: true });
-  window.addEventListener('resize', check);
-  window.addEventListener('load', check);
-  check();
+  var pending = false, lastSample = 0;
+  function update() {
+    pending = false;
+    footCheck();
+    var now = performance.now();
+    if (document.body.classList.contains('scrolling') && now - lastSample < 120) return;
+    lastSample = now;
+    sample();
+  }
+  function req() { if (!pending) { pending = true; requestAnimationFrame(update); } }
+  function force() { lastSample = 0; req(); }
+  window.addEventListener('scroll', req, { passive: true });
+  window.addEventListener('resize', force);
+  window.addEventListener('load', force);
+  document.addEventListener('rowarrive', force);
+  document.querySelectorAll('.tile img').forEach(function (img) { img.addEventListener('load', force); });
+  force();
 })();
 
 // Row flick: one wheel gesture moves exactly one row (each row is one screen).
-// 1.0s heavy easing, trackpad momentum is swallowed until the gesture ends.
-// Footer is the final stop. Touch devices scroll freely.
+// Quick launch, long soft landing (expo-out). Trackpad momentum is swallowed
+// until the gesture ends. Footer is the final stop. Touch devices scroll freely.
 (function () {
   var grid = document.getElementById('work');
   if (!grid) return;
@@ -92,22 +93,25 @@
     return tops;
   }
   function active() { return window.matchMedia('(pointer: fine)').matches; }
-  function ease(t) { return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2; }
+  // Smooth in both directions but far less flat at the ends than quint-in-out,
+  // so there is no visible "stick" before it moves or before it stops.
+  function expoOut(t) { return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+  function cubicInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function curve(t) { return cubicInOut(t) * 0.35 + expoOut(t) * 0.65; }
 
   function go(to, duration) {
     var from = window.scrollY, start = performance.now();
     locked = true;
     body.classList.add('scrolling');
-    html.style.overflow = 'hidden';
     if (raf) cancelAnimationFrame(raf);
     function step(now) {
       var t = Math.min(1, (now - start) / duration);
-      window.scrollTo(0, Math.round(from + (to - from) * ease(t)));
+      window.scrollTo(0, from + (to - from) * curve(t));
       if (t < 1) raf = requestAnimationFrame(step);
       else {
         raf = null;
-        html.style.overflow = '';
         body.classList.remove('scrolling');
+        document.dispatchEvent(new Event('rowarrive'));
         setTimeout(function () { locked = false; }, 120);
       }
     }
@@ -118,11 +122,11 @@
     for (var k = 0; k < s.length; k++) if (Math.abs(s[k] - y) < Math.abs(s[i] - y)) i = k;
     var n = Math.min(s.length - 1, Math.max(0, i + dir));
     if (n === i && Math.abs(s[i] - y) < 2) return;
-    go(s[n], 1000);
+    go(s[n], 900);
   }
 
   window.addEventListener('wheel', function (e) {
-    if (!active()) return;
+    if (!active() || body.classList.contains('panel-open')) return; // panel scrolls natively
     var now = performance.now();
     if (now - lastWheel > 400) quiet = true; // a pause means a new gesture
     lastWheel = now;
@@ -139,8 +143,103 @@
   }, { passive: false });
 
   window.addEventListener('keydown', function (e) {
-    if (!active() || locked) return;
+    if (!active() || locked || body.classList.contains('panel-open')) return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); jump(1); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); jump(-1); }
   });
+})();
+
+// Hover card: the detail block of each tile follows the cursor, kept inside
+// the tile's own box so it never gets clipped.
+(function () {
+  var grid = document.getElementById('work');
+  if (!grid || window.matchMedia('(hover: none)').matches) return;
+  var tile = null, tip = null, x = 0, y = 0;
+  function place() {
+    if (!tile || !tip) return;
+    var r = tile.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    var gap = 14;
+    var tx = x - r.left + gap, ty = y - r.top + gap;
+    if (tx + w > r.width - 12) tx = x - r.left - gap - w;   // flip left near the right edge
+    if (ty + h > r.height - 12) ty = y - r.top - gap - h;   // flip up near the bottom
+    tx = Math.max(12, tx); ty = Math.max(12, ty);
+    tip.style.transform = 'translate(' + Math.round(tx) + 'px,' + Math.round(ty) + 'px)';
+  }
+  grid.addEventListener('mousemove', function (e) {
+    var t = e.target.closest ? e.target.closest('.tile') : null;
+    if (t !== tile) { tile = t; tip = t ? t.querySelector('.tip') : null; }
+    x = e.clientX; y = e.clientY;
+    place(); // mousemove already arrives at most once per frame
+  });
+  grid.addEventListener('mouseleave', function () { tile = null; tip = null; });
+
+  // Mean luminance of each tile image decides the card colour once per tile,
+  // so it never flickers while the cursor moves across a busy image.
+  function rate(img) {
+    var t = img.closest('.tile');
+    if (!t || !img.naturalWidth) return;
+    var cv = document.createElement('canvas'), W = 32, H = 32;
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d'), d;
+    try { ctx.drawImage(img, 0, 0, W, H); d = ctx.getImageData(0, 0, W, H).data; } catch (e) { return; }
+    var sum = 0;
+    for (var i = 0; i < d.length; i += 4) sum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+    t.classList.toggle('on-light', sum / (d.length / 4) > 0.65); // only clearly bright images get the black card
+  }
+  grid.querySelectorAll('.tile img').forEach(function (img) {
+    if (img.complete) rate(img); else img.addEventListener('load', function () { rate(img); });
+  });
+})();
+
+// Detail panel: clicking a tile opens its photos in a panel on the right.
+// Photo paths come from data-images; a missing file shows a grey placeholder
+// with the path it expects, so dropping the real file in is all that is needed.
+(function () {
+  var panel = document.getElementById('panel');
+  var grid = document.getElementById('work');
+  if (!panel || !grid) return;
+  var body = document.body;
+  var title = panel.querySelector('.panel-title'), meta = panel.querySelector('.panel-meta');
+  var role = panel.querySelector('.panel-role'), desc = panel.querySelector('.panel-desc');
+  var imgs = panel.querySelector('.panel-images');
+  var current = null;
+
+  function text(tile, sel) { var el = tile.querySelector(sel); return el ? el.textContent : ''; }
+  function open(tile) {
+    current = tile;
+    title.textContent = text(tile, '.meta b');
+    meta.textContent = text(tile, '.tip em');
+    role.textContent = text(tile, '.tip i');
+    desc.textContent = text(tile, '.tip small');
+    imgs.innerHTML = '';
+    (tile.getAttribute('data-images') || '').split(',').forEach(function (src) {
+      src = src.trim(); if (!src) return;
+      var im = document.createElement('img');
+      im.alt = ''; im.loading = 'lazy';
+      im.addEventListener('error', function () {
+        var ph = document.createElement('div');
+        ph.className = 'ph'; ph.textContent = src;
+        im.replaceWith(ph);
+      });
+      im.src = src;
+      imgs.appendChild(im);
+    });
+    panel.scrollTop = 0;
+    panel.setAttribute('aria-hidden', 'false');
+    body.classList.add('panel-open');
+  }
+  function close() {
+    current = null;
+    panel.setAttribute('aria-hidden', 'true');
+    body.classList.remove('panel-open');
+  }
+
+  grid.addEventListener('click', function (e) {
+    var tile = e.target.closest ? e.target.closest('.tile') : null;
+    if (!tile) return;
+    e.preventDefault();
+    if (tile === current) close(); else open(tile);
+  });
+  panel.querySelector('.panel-close').addEventListener('click', close);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) close(); });
 })();

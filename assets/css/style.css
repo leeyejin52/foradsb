@@ -55,7 +55,6 @@ p { margin: 0; }
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 600ms cubic-bezier(.2,.7,.2,1);
 }
 .tile:hover { opacity: 1; }
 .tile span.meta {
@@ -69,24 +68,89 @@ p { margin: 0; }
   line-height: 1.5;
   display: block;
   transition: opacity 300ms ease;
+  will-change: opacity;
 }
 .tile span.meta b { display: block; font-weight: 500; }
-.tile span.meta em, .tile span.meta i, .tile span.meta small {
+
+/* Details follow the cursor in a small white card (positioned by main.js) */
+.tile span.tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
   display: block;
-  font-style: normal;
-  font-size: 12px;
+  width: max-content;
+  max-width: 22em;
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--fg);
+  font-size: 11px;
+  line-height: 1.45;
   opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 250ms ease, transform 250ms ease;
+  pointer-events: none;
+  transition: opacity 120ms ease;
 }
-.tile span.meta small { max-width: 36em; margin-top: 6px; }
-.tile:hover span.meta em, .tile:hover span.meta i, .tile:hover span.meta small { opacity: 1; transform: none; }
-.tile:hover span.meta em { transition-delay: 40ms; }
-.tile:hover span.meta i { transition-delay: 90ms; }
-.tile:hover span.meta small { transition-delay: 140ms; }
-/* While the page is moving: labels hide, images sit slightly enlarged; both settle on arrival */
-body.scrolling .tile span.meta { opacity: 0; }
-body.scrolling .tile img { transform: scale(1.02); }
+.tile span.tip em, .tile span.tip i, .tile span.tip small { display: block; font-style: normal; font-size: 11px; }
+.tile span.tip small { margin-top: 4px; color: var(--muted); }
+.tile span.tip .arr { display: block; margin-top: 6px; text-align: right; font-size: 13px; }
+.tile:hover span.tip { opacity: 1; }
+/* Card inverts per tile: black on light images, white on dark ones (class set by main.js) */
+.tile.on-light span.tip { background: var(--fg); color: #fff; }
+.tile.on-light span.tip small { color: #b0b0b0; }
+@media (hover: none) { .tile span.tip { display: none; } }
+/* While the page is moving the labels hide; they fade back in on arrival */
+body.scrolling .tile span.meta, body.scrolling .tile span.tip { opacity: 0; }
+
+/* Detail panel: slides in from the right on click, grid stays put behind it */
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: min(560px, 50vw);
+  padding: 20px 20px 40px;
+  background: var(--bg);
+  border-left: 1px solid var(--fg);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 400ms cubic-bezier(.2,.7,.2,1);
+}
+body.panel-open .panel { transform: none; }
+body.panel-open .hd { opacity: 0; pointer-events: none; }
+.panel-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  margin: -4px -4px 0 0;
+  padding: 0 6px;
+  border: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.panel-close:hover { opacity: 0.5; }
+.panel-head { line-height: 1.6; margin-bottom: 24px; }
+.panel-title { font-weight: 600; font-size: 14px; }
+.panel-desc { margin-top: 8px; max-width: 36em; }
+.panel-images { display: grid; gap: 12px; }
+.panel-images img { width: 100%; height: auto; display: block; background: #ececec; }
+/* Placeholder while a detail image is missing: a grey box carrying the expected path */
+.panel-images .ph {
+  aspect-ratio: 4 / 5;
+  background: #ececec;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  text-align: center;
+  padding: 12px;
+}
+@media (max-width: 720px) { .panel { width: 100vw; border-left: 0; } }
 
 /* Footer: full-height, two columns (sense / execution), contact at the bottom */
 .foot {
