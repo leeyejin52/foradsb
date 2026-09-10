@@ -23,7 +23,7 @@
     var b = img.getBoundingClientRect();
     var s = Math.max(b.width / img.naturalWidth, b.height / img.naturalHeight);
     var dw = img.naturalWidth * s, dh = img.naturalHeight * s;
-    var ox = b.left + (b.width - dw) / 2, oy = b.top + (b.height - dh) / 2;
+    var ox = b.left + (b.width - dw) / 2, oy = b.top; // matches object-position: 50% 0
     var x0 = Math.max(0, (r.left - ox) / dw), x1 = Math.min(1, (r.right - ox) / dw);
     var y0 = Math.max(0, (r.top - oy) / dh), y1 = Math.min(1, (r.bottom - oy) / dh);
     if (x1 <= x0 || y1 <= y0) return 1;
@@ -126,24 +126,29 @@
   }
 
   window.addEventListener('wheel', function (e) {
-    if (!active() || body.classList.contains('panel-open')) return; // panel scrolls natively
+    if (!active()) return;
+    var panel = document.getElementById('panel');
+    if (panel && panel.contains(e.target)) return; // the panel scrolls natively
+    // Cancel every wheel event, including the tiny first one of a trackpad gesture.
+    // If the first event of a gesture gets through, the browser makes the rest of that
+    // gesture uncancellable and its native momentum scroll fights our animation (jitter).
+    e.preventDefault();
+    if (body.classList.contains('shifting')) return;
     var now = performance.now();
     if (now - lastWheel > 400) quiet = true; // a pause means a new gesture
     lastWheel = now;
-    if (locked) { e.preventDefault(); return; }
+    if (locked) return;
     if (!quiet) { // momentum tail of the gesture that already moved us
-      e.preventDefault();
       if (Math.abs(e.deltaY) < 4) quiet = true;
       return;
     }
-    if (Math.abs(e.deltaY) < 4) return;
-    e.preventDefault();
+    if (Math.abs(e.deltaY) < 4) return; // gesture is still winding up
     quiet = false;
     jump(e.deltaY > 0 ? 1 : -1);
   }, { passive: false });
 
   window.addEventListener('keydown', function (e) {
-    if (!active() || locked || body.classList.contains('panel-open')) return;
+    if (!active() || locked || body.classList.contains('shifting')) return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); jump(1); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); jump(-1); }
   });
@@ -205,8 +210,10 @@
   var current = null;
 
   function text(tile, sel) { var el = tile.querySelector(sel); return el ? el.textContent : ''; }
-  function open(tile) {
-    current = tile;
+  var SLIDE = 480; // must match the panel and .page.moving transitions in style.css
+  var timer = null;
+
+  function fill(tile) {
     title.textContent = text(tile, '.meta b');
     meta.textContent = text(tile, '.tip em');
     role.textContent = text(tile, '.tip i');
@@ -225,13 +232,57 @@
       imgs.appendChild(im);
     });
     panel.scrollTop = 0;
+  }
+  // Push. Animate a pure scale of the page block around the top of the current row,
+  // then commit the real layout (narrow grid + shorter tiles + matching scroll) in one go.
+  var page = document.getElementById('page');
+  function relayout(split, tile) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var panelW = panel.offsetWidth;
+    var ratio = (vw - panelW) / vw;
+    var ref = grid.querySelector('.tile'), h0 = ref.offsetHeight;
+    var row = Math.round((tile ? tile.offsetTop : window.scrollY) / h0);
+    function commit() {
+      page.classList.remove('moving');
+      page.style.transform = ''; page.style.transformOrigin = '';
+      body.classList.toggle('split', split);
+      grid.style.setProperty('--tile-h', split && ratio > 0 ? (vh * ratio) + 'px' : '');
+      window.scrollTo(0, row * grid.querySelector('.tile').offsetHeight);
+      body.classList.remove('shifting');
+      document.dispatchEvent(new Event('rowarrive')); // header colour re-check
+    }
+    clearTimeout(timer);
+    body.classList.add('shifting');
+    if (!page || ratio <= 0 || ratio >= 1) { commit(); return; } // e.g. full-width panel on mobile
+    page.style.transformOrigin = '0 ' + (row * h0) + 'px';
+    page.classList.add('moving');
+    page.getBoundingClientRect(); // flush so the transform below actually transitions
+    page.style.transform = 'scale(' + (split ? ratio : 1 / ratio) + ')';
+    var done = false;
+    function end(e) { if (done || (e && e.target !== page)) return; done = true; page.removeEventListener('transitionend', end); commit(); }
+    page.addEventListener('transitionend', end);
+    timer = setTimeout(end, SLIDE + 100); // safety net
+  }
+  function open(tile) {
+    var wasOpen = !!current;
+    current = tile;
+    if (wasOpen) { // switching project while open: swap the content only
+      panel.classList.add('swapping');
+      fill(tile);
+      setTimeout(function () { panel.classList.remove('swapping'); }, 20);
+      return;
+    }
+    fill(tile);
     panel.setAttribute('aria-hidden', 'false');
     body.classList.add('panel-open');
+    relayout(true, tile);
   }
   function close() {
+    var tile = current;
     current = null;
     panel.setAttribute('aria-hidden', 'true');
     body.classList.remove('panel-open');
+    relayout(false, tile);
   }
 
   grid.addEventListener('click', function (e) {
