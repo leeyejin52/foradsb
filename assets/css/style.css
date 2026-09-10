@@ -8,10 +8,11 @@
 * { box-sizing: border-box; }
 
 html {
-  /* Row snapping, done by the browser: no wheel interception. Proximity, not
-     mandatory — mandatory has to come to rest on a snap point, so releasing inside
-     the long About text dragged the page back up to the footer's start and the
-     contact block at the very bottom could never be reached. */
+  /* Row snapping, done by the browser: no wheel interception. main.js raises this
+     to "y mandatory" over the image rows, where one flick should move exactly one
+     row, and switches it off inside the footer, where mandatory would drag the
+     long About text back to the footer's start. This value is the no-script
+     fallback: it snaps loosely and never traps the reader. */
   scroll-snap-type: y proximity;
 }
 

@@ -176,3 +176,22 @@
   if (location.hash) { var t0 = document.querySelector(location.hash); if (t0 && t0.closest('.foot')) goTo(t0, false); }
   spy();
 })();
+
+// Hard row snapping over the images, none inside the footer. The snap points end
+// at the footer's own start, so the switch happens exactly on a snap point and
+// costs no movement in either direction.
+(function () {
+  var foot = document.querySelector('.foot');
+  var root = document.documentElement;
+  if (!foot) return;
+  var overRows = null;
+  function apply() {
+    var now = window.scrollY < foot.offsetTop - 1;
+    if (now === overRows) return;
+    overRows = now;
+    root.style.scrollSnapType = now ? 'y mandatory' : 'none';
+  }
+  window.addEventListener('scroll', apply, { passive: true });
+  window.addEventListener('resize', apply);
+  apply();
+})();
