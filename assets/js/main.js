@@ -129,6 +129,14 @@
     var sum = 0;
     for (var i = 0; i < d.length; i += 4) sum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
     t.classList.toggle('on-light', sum / (d.length / 4) > 0.65); // only clearly bright images get the black card
+    // The caption sits in the bottom strip, and difference turns it white wherever
+    // that strip is dark. The cursor takes its colour from the same reading, so the
+    // dot and the caption are never opposite colours on the same tile.
+    var band;
+    try { band = ctx.getImageData(0, Math.round(H * 0.86), W, H - Math.round(H * 0.86)).data; } catch (e) { return; }
+    var low = 0;
+    for (var j = 0; j < band.length; j += 4) low += (0.2126 * band[j] + 0.7152 * band[j + 1] + 0.0722 * band[j + 2]) / 255;
+    t.classList.toggle('on-dark', low / (band.length / 4) < 0.5);
   }
   grid.querySelectorAll('.tile img').forEach(function (img) {
     if (img.complete) rate(img); else img.addEventListener('load', function () { rate(img); });
