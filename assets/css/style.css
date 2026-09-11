@@ -60,36 +60,19 @@ p { margin: 0; }
 .hd.light { color: #fff; }
 .hd.hidden { opacity: 0; transform: translateY(-8px); pointer-events: none; }
 
-/* Contact, pinned to the bottom-left of the viewport a few pixels off the edge.
-   It is the header's counterpart: the header carries the name over the images and
-   fades out at the footer, and this fades in there, so the About text can be read
-   end to end without scrolling to find the contact details. Kept out of the image
-   rows, where the tile captions already sit in this corner. It sits last inside
-   .foot so it inherits the About type — and so that dropping the fixing on narrow
-   screens is enough to put it back in the flow, under the text. */
+/* Contact, at the foot of the left column — the index's counterpart, stuck the
+   same way: the index holds the column's ceiling, this holds its floor. */
 .ft {
-  position: fixed;
-  left: 20px;
+  position: sticky;
   bottom: 20px;
-  z-index: 10;
-  color: var(--fg);
-  /* 20px x 1.15 is the 20/23 setting of the About text, written as a ratio so the
-     whole block keeps its proportions as it grows. */
   font-size: 20px;
   line-height: 1.15;
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
+  color: var(--fg);
 }
 .ft ul { list-style: none; margin: 0; padding: 0; }
 .ft a { text-decoration: underline; text-underline-offset: 3px; }
 .ft a:hover { opacity: 1; color: var(--muted); }
-.ft.ready { transition: opacity 300ms ease, transform 300ms ease, font-size 650ms cubic-bezier(0.22, 0.61, 0.36, 1); }
-.ft.shown { opacity: 1; transform: none; pointer-events: auto; }
-/* Past the last line of the About text there is a screen of empty space, and the
-   contact grows into it — five times up, from the bottom edge it is pinned to.
-   Capped against the viewport width so the longest line never runs off the right. */
-.ft.end { font-size: min(100px, 9vw); }
+
 /* Section titles live in the index only, kept in the markup for screen readers. */
 .ft h2, .foot h2 {
   position: absolute;
@@ -180,14 +163,30 @@ p { margin: 0; }
   position: relative;
   min-height: 100svh;
   scroll-snap-align: start;
-  padding: 20px 20px 100svh; /* room below, so even the last section can reach the top */
+  padding: 20px;
   font-size: 20px;
   line-height: 23px;
   letter-spacing: -0.01em;
   font-weight: 400;
 }
 .foot ul { list-style: none; margin: 0; padding: 0; }
+/* The left column stretches over the whole text, so the things stuck to it have the
+   full run. The index holds its ceiling; the contact holds the floor of the slot
+   below it. The slot starting under the index is what keeps the two apart: while
+   the footer is still climbing into view the contact cannot rise past the slot's
+   own top, so instead of landing on the index it comes up from below behind it. */
+.foot .side {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
 .foot .index { position: sticky; top: 20px; }
+.foot .ft-slot {
+  flex: 1;
+  margin-top: 40px; /* clear of the index, whatever the window height */
+  display: flex;
+  align-items: flex-end;
+}
 .foot .index ul + ul { margin-top: 23px; } /* the blank line before 프로젝트 / 학력 및 이력 */
 /* Index follows the scroll: the section under the top of the screen is marked (main.js) */
 .foot .index a { color: var(--fg); transition: color 200ms ease; }
@@ -197,7 +196,11 @@ p { margin: 0; }
 
 .foot .about section { margin-bottom: 120px; scroll-margin-top: 20px; }
 .foot .about ul + ul { margin-top: 23px; } /* the blank line between 경력 and 학력 */
-.foot .about section:last-child { margin-bottom: 0; }
+/* The last section carries the run below it as its own height, rather than the
+   column carrying padding: it is exactly one screen less the two 20px margins, so
+   the page stops the moment that section's top reaches the top of the window —
+   far enough for every index entry to reach the top, and not a pixel further. */
+.foot .about section:last-child { margin-bottom: 0; min-height: calc(100svh - 40px); }
 .foot p { margin: 0; }
 .foot p + p { margin-top: 30px; }
 .foot .about em { font-style: italic; }
@@ -207,21 +210,21 @@ p { margin: 0; }
 
 @media (max-width: 720px) {
   .grid { grid-template-columns: 1fr; }
-  .foot { grid-template-columns: 1fr; row-gap: 40px; font-size: 16px; line-height: 20px; min-height: 0; padding-bottom: 100svh; }
-  .foot .index { position: static; }
+  .foot { grid-template-columns: 1fr; row-gap: 40px; font-size: 16px; line-height: 20px; min-height: 0; }
+  /* One column, so the left column stops being one: index, text, contact, in that
+     order, nothing stuck to anything. */
+  .foot .side, .foot .ft-slot { display: contents; }
+  .foot .index { position: static; order: 1; }
+  .foot .about { order: 2; padding-bottom: 48svh; }
+  .foot .about section:last-child { min-height: 0; } /* the contact ends the page here */
   .foot p + p { margin-top: 24px; }
   .foot .about section { margin-bottom: 72px; }
   .foot .about ul + ul { margin-top: 20px; }
-  /* One column: the corner is over the text, so the contact returns to the flow
-     and simply ends the page. */
+  /* Nothing is stuck to anything here: it just ends the page at reading size. */
   .ft {
     position: static;
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-    transition: none;
-    font-size: inherit;
-    line-height: inherit;
+    order: 3;
+    font-size: 16px;
+    line-height: 20px;
   }
-  .ft.end { font-size: inherit; } /* nothing to grow into: it sits in the flow */
 }

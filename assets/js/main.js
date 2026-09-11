@@ -65,21 +65,9 @@
     });
     hd.classList.toggle('light', n ? (lum / n) < 0.5 : false);
   }
-  // The two corners swap once the footer enters the viewport: the header steps
-  // aside (the footer carries the same info) and the contact block fades in.
-  // Below the last line of the About text runs one empty screen. Once that last
-  // line has climbed past the middle of the window the reader is into that run,
-  // and the contact grows to fill it. Measured against the middle and not the top
-  // edge on purpose: the run is exactly one screen tall, so the text's bottom only
-  // ever reaches the top edge at the very last pixel of the scroll.
-  var ft = document.getElementById('ft');
-  var about = document.querySelector('.foot .about');
+  // Hide the header once the footer enters the viewport (it carries the same info).
   function footCheck() {
-    var inFoot = foot ? foot.getBoundingClientRect().top < window.innerHeight - 1 : false;
-    hd.classList.toggle('hidden', inFoot);
-    if (!ft) return;
-    ft.classList.toggle('shown', inFoot);
-    ft.classList.toggle('end', inFoot && !!about && about.getBoundingClientRect().bottom < window.innerHeight / 2);
+    if (foot) hd.classList.toggle('hidden', foot.getBoundingClientRect().top < window.innerHeight - 1);
   }
   var pending = false, lastSample = 0, settle = null;
   function update() {
@@ -99,10 +87,7 @@
   window.addEventListener('load', function () {
     force();
     // The restored scroll position lands around here; only then allow the fades.
-    setTimeout(function () {
-      hd.classList.add('ready');
-      if (ft) ft.classList.add('ready');
-    }, 200);
+    setTimeout(function () { hd.classList.add('ready'); }, 200);
   });
   document.querySelectorAll('.tile img').forEach(function (img) { img.addEventListener('load', force); });
   force();
