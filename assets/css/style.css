@@ -2,6 +2,7 @@
   --bg: #ffffff;
   --fg: #0a0a0a;
   --muted: #888888;
+  --accent: #000AFF;
   --font: "Inter", "SUIT", "Apple SD Gothic Neo", sans-serif;
 }
 
@@ -58,6 +59,46 @@ p { margin: 0; }
 .hd.ready { transition: color 250ms ease, opacity 300ms ease, transform 300ms ease; }
 .hd.light { color: #fff; }
 .hd.hidden { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+
+/* Contact, pinned to the bottom-left of the viewport a few pixels off the edge.
+   It is the header's counterpart: the header carries the name over the images and
+   fades out at the footer, and this fades in there, so the About text can be read
+   end to end without scrolling to find the contact details. Kept out of the image
+   rows, where the tile captions already sit in this corner. It sits last inside
+   .foot so it inherits the About type — and so that dropping the fixing on narrow
+   screens is enough to put it back in the flow, under the text. */
+.ft {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 10;
+  color: var(--fg);
+  /* 20px x 1.15 is the 20/23 setting of the About text, written as a ratio so the
+     whole block keeps its proportions as it grows. */
+  font-size: 20px;
+  line-height: 1.15;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+.ft ul { list-style: none; margin: 0; padding: 0; }
+.ft a { text-decoration: underline; text-underline-offset: 3px; }
+.ft a:hover { opacity: 1; color: var(--muted); }
+.ft.ready { transition: opacity 300ms ease, transform 300ms ease, font-size 650ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+.ft.shown { opacity: 1; transform: none; pointer-events: auto; }
+/* Past the last line of the About text there is a screen of empty space, and the
+   contact grows into it — five times up, from the bottom edge it is pinned to.
+   Capped against the viewport width so the longest line never runs off the right. */
+.ft.end { font-size: min(100px, 9vw); }
+/* Section titles live in the index only, kept in the markup for screen readers. */
+.ft h2, .foot h2 {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 /* Grid */
 .grid {
@@ -147,28 +188,20 @@ p { margin: 0; }
 }
 .foot ul { list-style: none; margin: 0; padding: 0; }
 .foot .index { position: sticky; top: 20px; }
-.foot .index ul + ul { margin-top: 23px; } /* the blank line before 경력 / 학력 / 연락처 */
+.foot .index ul + ul { margin-top: 23px; } /* the blank line before 프로젝트 / 학력 및 이력 */
 /* Index follows the scroll: the section under the top of the screen is marked (main.js) */
-.foot .index a { color: var(--muted); transition: color 200ms ease; }
-.foot .index a:hover { opacity: 1; color: var(--fg); }
-.foot .index li.active a { color: var(--fg); }
+.foot .index a { color: var(--fg); transition: color 200ms ease; }
+.foot .index a:hover { opacity: 1; color: var(--accent); }
+.foot .index li.active a { color: var(--accent); }
 .foot .about { line-height: 1.5; }
 
 .foot .about section { margin-bottom: 120px; scroll-margin-top: 20px; }
+.foot .about ul + ul { margin-top: 23px; } /* the blank line between 경력 and 학력 */
 .foot .about section:last-child { margin-bottom: 0; }
-/* Section titles live in the index only, kept in the markup for screen readers.
-   Sections are separated by whitespace alone. */
-.foot h2 {
-  position: absolute;
-  width: 1px; height: 1px;
-  margin: -1px; padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 .foot p { margin: 0; }
 .foot p + p { margin-top: 30px; }
 .foot .about em { font-style: italic; }
+.foot #career em { font-style: normal; } /* job titles and school names read as plain text */
 .foot .about a { text-decoration: underline; text-underline-offset: 3px; }
 .foot .about a:hover { opacity: 1; color: var(--muted); }
 
@@ -178,4 +211,17 @@ p { margin: 0; }
   .foot .index { position: static; }
   .foot p + p { margin-top: 24px; }
   .foot .about section { margin-bottom: 72px; }
+  .foot .about ul + ul { margin-top: 20px; }
+  /* One column: the corner is over the text, so the contact returns to the flow
+     and simply ends the page. */
+  .ft {
+    position: static;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition: none;
+    font-size: inherit;
+    line-height: inherit;
+  }
+  .ft.end { font-size: inherit; } /* nothing to grow into: it sits in the flow */
 }
